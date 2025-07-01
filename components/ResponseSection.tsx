@@ -12,6 +12,11 @@ interface RagDetails {
   similarities?: number[]
   processingTime: number
   resultCount: number
+  metadata?: Array<{
+    score?: number
+    timestamp?: string
+    [key: string]: string | number | boolean | null | undefined
+  }>
 }
 
 interface ResponseSectionProps {
@@ -162,15 +167,26 @@ export function ResponseSection({ llmResponse, ragDetails, isLoading, error }: R
                             ID: {ragDetails.ids[index]}
                           </Badge>
                         </div>
-                        {ragDetails.similarities?.[index] !== undefined && (
-                          <Badge 
-                            variant="outline" 
-                            className="flex items-center gap-1 text-xs"
-                          >
-                            <Target className="h-3 w-3" />
-                            {Math.round(ragDetails.similarities[index] * 100)}%
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {ragDetails.similarities?.[index] !== undefined && (
+                            <Badge 
+                              variant="outline" 
+                              className="flex items-center gap-1 text-xs"
+                            >
+                              <Target className="h-3 w-3" />
+                              {Math.round(ragDetails.similarities[index] * 100)}%
+                            </Badge>
+                          )}
+                          {ragDetails.metadata?.[index]?.timestamp && (
+                            <Badge 
+                              variant="secondary" 
+                              className="flex items-center gap-1 text-xs"
+                            >
+                              <Clock className="h-3 w-3" />
+                              {new Date(ragDetails.metadata[index].timestamp!).toLocaleDateString()}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         &ldquo;{doc}&rdquo;

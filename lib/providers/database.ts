@@ -236,6 +236,8 @@ class ChromaDatabase implements VectorDatabase {
 // Upstash Vector implementation
 class UpstashDatabase implements VectorDatabase {
   private index: Index | null = null
+  private retryAttempts = 3
+  private retryDelay = 1000 // 1 second
 
   async initialize(): Promise<void> {
     try {
@@ -248,11 +250,33 @@ class UpstashDatabase implements VectorDatabase {
         token: config.UPSTASH_VECTOR_TOKEN,
       })
 
+      // Verify connection with a simple query
+      await this.index.query({ vector: [0], topK: 1 }).catch(() => {
+        throw new Error('Failed to verify Upstash Vector connection')
+      })
+
       console.log('✅ Upstash Vector initialized successfully')
     } catch (error) {
       console.error('❌ Failed to initialize Upstash Vector:', error)
       throw error
     }
+  }
+
+  private async withRetry<T>(operation: () => Promise<T>): Promise<T> {
+    let lastError: Error | null = null;
+    
+    for (let i = 0; i < this.retryAttempts; i++) {
+      try {
+        return await operation()
+      } catch (error) {
+        lastError = error as Error
+        if (i < this.retryAttempts - 1) {
+          await new Promise(resolve => setTimeout(resolve, this.retryDelay * Math.pow(2, i)))
+        }
+      }
+    }
+    
+    throw lastError || new Error('Operation failed after retries')
   }
 
   async addDocuments(documents: string[], embeddings: number[][], ids: string[]): Promise<void> {
@@ -263,10 +287,15 @@ class UpstashDatabase implements VectorDatabase {
     const vectors = embeddings.map((embedding, i) => ({
       id: ids[i],
       vector: embedding,
-      metadata: { document: documents[i] },
+      metadata: { 
+        document: documents[i],
+        timestamp: new Date().toISOString(),
+        collection: COLLECTION_NAME
+      },
     }))
 
-    await this.index.upsert(vectors)
+    await this.withRetry(() => this.index!.upsert(vectors))
+    console.log(`✅ Successfully added ${vectors.length} documents to Upstash Vector`)
   }
 
   async query(queryEmbedding: number[], nResults: number): Promise<RagResult> {
@@ -274,16 +303,22 @@ class UpstashDatabase implements VectorDatabase {
       throw new Error('Upstash Vector not initialized')
     }
 
-    const results = await this.index.query({
-      vector: queryEmbedding,
-      topK: nResults,
-      includeMetadata: true,
-    })
+    const results = await this.withRetry(() => 
+      this.index!.query({
+        vector: queryEmbedding,
+        topK: nResults,
+        includeMetadata: true,
+      })
+    )
 
     return {
       documents: results.map(r => (r.metadata as { document?: string })?.document || ''),
       ids: results.map(r => String(r.id)),
-      distances: results.map(r => 1 - (r.score || 0)), // Convert score to distance
+      distances: results.map(r => 1 - (r.score || 0)), // Convert similarity score to distance
+      metadata: results.map(r => ({
+        score: r.score || 0,
+        timestamp: (r.metadata as { timestamp?: string })?.timestamp,
+      }))
     }
   }
 
@@ -292,23 +327,36 @@ class UpstashDatabase implements VectorDatabase {
       throw new Error('Upstash Vector not initialized')
     }
 
-    // Note: Upstash Vector doesn't have a direct way to get all IDs
-    // This is a limitation we'll need to work around
-    console.warn('⚠️ Upstash Vector: Cannot efficiently get existing IDs')
-    return []
+    try {
+      // Query with a dummy vector to get some IDs
+      const results = await this.index.query({
+        vector: new Array(1536).fill(0), // Standard embedding dimension
+        topK: 100,
+        includeMetadata: false,
+      })
+      
+      return results.map(r => String(r.id))
+    } catch (error) {
+      console.warn('⚠️ Upstash Vector: Failed to retrieve existing IDs', error)
+      return []
+    }
   }
 }
 
 // Factory function to create the appropriate database
 export function createVectorDatabase(): VectorDatabase {
+  // Try to use Upstash if credentials are available
+  if (config.VECTOR_DB_TYPE === 'upstash' && config.UPSTASH_VECTOR_URL && config.UPSTASH_VECTOR_TOKEN) {
+    return new UpstashDatabase()
+  }
+
+  // Fall back to other providers
   switch (config.VECTOR_DB_TYPE) {
     case 'chroma':
       return new ChromaDatabase()
-    case 'upstash':
-      return new UpstashDatabase()
     case 'simple':
     default:
-      // Use simple vector database for local development by default
+      console.log('⚠️ Falling back to simple vector database')
       return new SimpleVectorDatabase()
   }
 }

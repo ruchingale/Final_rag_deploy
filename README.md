@@ -42,32 +42,34 @@ Open [http://localhost:3000](http://localhost:3000) and start asking questions a
 
 ## 🏗️ Architecture Options
 
-### Simple Vector Database (Default)
+### Upstash Vector Database (Recommended)
 ```bash
-# .env.local
+# .env.local - Production Ready
+VECTOR_DB_TYPE=upstash
+UPSTASH_VECTOR_URL=your_upstash_url
+UPSTASH_VECTOR_TOKEN=your_upstash_token
+LLM_PROVIDER=groq
+```
+✅ Built-in embeddings via mixedbread-ai/mxbai-embed-large-v1
+✅ Scalable and persistent storage
+✅ Ready for Vercel deployment
+
+### Simple Vector Database (Development)
+```bash
+# .env.local - Quick Local Development
 VECTOR_DB_TYPE=simple
-EMBEDDING_PROVIDER=ollama
 LLM_PROVIDER=ollama
 ```
 ✅ Works immediately, no setup required
+✅ In-memory storage for testing
 
-### ChromaDB + Ollama (Advanced Local)
+### ChromaDB (Legacy)
 ```bash
-# Requires: pip install chromadb && chroma run
+# .env.local - Advanced Local Setup
 VECTOR_DB_TYPE=chroma
-EMBEDDING_PROVIDER=ollama  
 LLM_PROVIDER=ollama
 ```
-✅ Full vector database features
-
-### Cloud Deployment (Production)
-```bash
-# Requires API keys from Upstash, Clarifai, Groq
-VECTOR_DB_TYPE=upstash
-EMBEDDING_PROVIDER=clarifai
-LLM_PROVIDER=groq
-```
-✅ Ready for Vercel deployment
+⚠️ Requires additional setup
 
 ## 🏗️ Architecture
 
@@ -131,16 +133,20 @@ LLM_PROVIDER=groq
 
 ## 🔧 Configuration
 
-### Switching Providers
-Change these environment variables to switch between local and cloud:
-- `VECTOR_DB_TYPE`: `chroma` | `upstash`
-- `EMBEDDING_PROVIDER`: `ollama` | `clarifai`
-- `LLM_PROVIDER`: `ollama` | `groq`
+### Provider Configuration
+Change these environment variables to configure your setup:
 
-### Customizing Models
-- **Ollama**: Change `EMBED_MODEL` and `LLM_MODEL`
-- **Clarifai**: Update `CLARIFAI_MODEL_URL`
-- **Groq**: Modify `GROQ_MODEL`
+#### Vector Database (Default: Upstash)
+- `VECTOR_DB_TYPE`: `upstash` (recommended) | `simple` (development) | `chroma` (legacy)
+- `UPSTASH_VECTOR_URL`: Your Upstash Vector instance URL
+- `UPSTASH_VECTOR_TOKEN`: Your Upstash authentication token
+
+#### LLM Provider (Required)
+- `LLM_PROVIDER`: `groq` (recommended) | `ollama` (local development)
+- `GROQ_API_KEY`: Your Groq API key
+- `GROQ_MODEL`: Default is llama-3.2-3b-preview
+
+Note: Embedding is handled automatically by Upstash using mixedbread-ai/mxbai-embed-large-v1
 
 ## 📊 Data Format
 

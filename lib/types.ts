@@ -29,6 +29,11 @@ export interface RagResult {
   ids: string[]
   distances?: number[]
   metadatas?: (FoodMetadata | null)[]
+  metadata?: Array<{
+    score?: number
+    timestamp?: string
+    [key: string]: string | number | boolean | null | undefined
+  }>
 }
 
 // LLM response interface
@@ -55,7 +60,7 @@ export interface RagQueryResponse {
 }
 
 // Provider types
-export type VectorDbType = 'chroma' | 'upstash'
+export type VectorDbType = 'upstash' | 'simple' | 'chroma'
 export type EmbeddingProvider = 'ollama' | 'clarifai'
 export type LlmProvider = 'ollama' | 'groq'
 

@@ -84,10 +84,10 @@ export function EmbeddingSection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Database className="h-5 w-5" />
-          Embedding Status
+          Upstash Vector Sync
         </CardTitle>
         <CardDescription>
-          Manage food data embeddings for RAG search
+          Manage and synchronize food data with Upstash Vector Database
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -132,7 +132,7 @@ export function EmbeddingSection() {
             {isPending ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : null}
-            {status?.remaining === 0 ? 'Re-embed All' : 'Embed New Items'}
+            {status?.remaining === 0 ? 'Re-sync All' : 'Sync New Items'}
           </Button>
           
           <Button 
@@ -140,7 +140,7 @@ export function EmbeddingSection() {
             onClick={() => handleEmbed(true)} 
             disabled={isPending}
           >
-            Force Re-embed
+            Force Re-sync
           </Button>
         </div>
 

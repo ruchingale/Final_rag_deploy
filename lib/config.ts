@@ -3,7 +3,7 @@ import { z } from 'zod'
 // Environment variable schema
 const envSchema = z.object({
   // Database configuration
-  VECTOR_DB_TYPE: z.enum(['chroma', 'upstash', 'simple']).default('simple'),
+  VECTOR_DB_TYPE: z.enum(['chroma', 'upstash', 'simple']).default('upstash'),
   CHROMA_PATH: z.string().default('./chroma_db'),
   UPSTASH_VECTOR_URL: z.string().optional(),
   UPSTASH_VECTOR_TOKEN: z.string().optional(),
