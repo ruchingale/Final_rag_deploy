@@ -112,14 +112,6 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
-type LegendProps = React.ComponentProps<typeof RechartsPrimitive.Legend> & {
-  payload?: LegendPayload[]
-  verticalAlign?: "top" | "middle" | "bottom"
-}
-
-type ValueType = string | number | undefined
-type NameType = string | number
-
 interface TooltipPayload {
   dataKey: string
   name: string
